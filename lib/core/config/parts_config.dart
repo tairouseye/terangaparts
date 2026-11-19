@@ -39,13 +39,21 @@ class PartsSupplier {
     this.currency = 'KRW',
   });
 
-  /// URL a ouvrir : recherche pre-remplie si possible, sinon le site.
+  /// Le site sait-il chercher directement une reference ?
+  bool get hasSearch => searchUrlTemplate != null;
+
+  /// URL a ouvrir : recherche du site si possible ; sinon recherche Google
+  /// limitee au site (« site:sparekorea.com 58101-2SA70 ») ; sans
+  /// reference, la page d'accueil.
   String urlFor(String? reference) {
     final ref = reference?.trim() ?? '';
-    if (searchUrlTemplate != null && ref.isNotEmpty) {
+    if (ref.isEmpty) return siteUrl;
+    if (searchUrlTemplate != null) {
       return searchUrlTemplate!.replaceAll('{q}', Uri.encodeComponent(ref));
     }
-    return siteUrl;
+    final host = Uri.parse(siteUrl).host.replaceFirst('www.', '');
+    return 'https://www.google.com/search?q='
+        '${Uri.encodeComponent('site:$host $ref')}';
   }
 }
 
@@ -56,6 +64,11 @@ class PartsConfig {
   /// (modifiable a la saisie). Le devis client reste calcule en KRW -> FCFA
   /// par le serveur (table `settings`).
   static const num defaultUsdToKrw = 1400;
+
+  /// Catalogue constructeur par VIN (schemas + references exactes du
+  /// vehicule) : PartSouq accepte le VIN dans sa recherche.
+  static String vinCatalogUrl(String vin) =>
+      'https://partsouq.com/en/search/all?q=${Uri.encodeComponent(vin.trim())}';
 
   static const List<PartsSupplier> suppliers = [
     PartsSupplier(
@@ -102,6 +115,8 @@ class PartsConfig {
       note: 'Catalogue de pièces d\'origine multimarques. '
           'Conditions à confirmer.',
       siteUrl: 'https://partsouq.com',
+      // Recherche par reference OU par VIN (catalogue constructeur).
+      searchUrlTemplate: 'https://partsouq.com/en/search/all?q={q}',
       currency: 'USD',
     ),
     PartsSupplier(

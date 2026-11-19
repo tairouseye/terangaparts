@@ -12,6 +12,12 @@ class Formatters {
     return '${_fcfa.format(value.round())} FCFA';
   }
 
+  /// 45000 -> "45 000 KRW"
+  static String krw(num? value) {
+    if (value == null) return '-';
+    return '${_fcfa.format(value.round())} KRW';
+  }
+
   /// Date courte : 09/07/2026
   static String date(DateTime? d) {
     if (d == null) return '-';

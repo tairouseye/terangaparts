@@ -12,6 +12,22 @@ construire avec `tools/build_web.sh` (version et date embarquées).
 - **Z** (correctif) : correction sans nouvelle fonctionnalité
 - **+build** : augmente de 1 à chaque mise en ligne
 
+## [1.4.0] — Trouver une pièce plus vite
+- **Référence déjà remplie** : quand le client a envoyé une photo de la
+  pièce, la référence constructeur lue par l'IA est reprise dans l'écran
+  « Sourcer la pièce ». La photo du client s'affiche sur le même écran.
+- **Catalogue constructeur par VIN** : un bouton ouvre le catalogue PartSouq
+  du véhicule exact (schémas et références d'origine).
+- **Tous les fournisseurs sur un écran** : pour chacun, un bouton
+  « Chercher » ouvre la recherche de la référence, et un bouton WhatsApp
+  envoie le message pré-rempli. Pour les sites sans recherche, c'est une
+  recherche Google limitée au site.
+- **Messages aux fournisseurs en anglais** (véhicule, VIN, référence,
+  quantité ; on demande le prix, le poids et le délai).
+- **Déjà sourcé** : les sourcings précédents de la même référence (ou de la
+  même pièce sur le même modèle) s'affichent avec le fournisseur, le prix,
+  le poids et la date. Un bouton « Reprendre » remplit le formulaire.
+
 ## [1.3.1] — Des messages clairs pour la connexion et les emails
 - **Messages en français clair** pour la connexion, l'inscription, le mot de
   passe oublié et la création de compte : « Email ou mot de passe

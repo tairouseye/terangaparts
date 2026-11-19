@@ -13,10 +13,14 @@ import '../../providers/auth_providers.dart';
 import '../../providers/partner_providers.dart';
 import '../../providers/quote_providers.dart';
 import 'build_quote_screen.dart';
+import 'sourcing_helpers.dart';
 
-/// Admin : sourcing d'une piece aupres d'un fournisseur (voir PartsConfig)
-/// puis saisie de la proposition fournisseur. A la validation, la demande passe a 'piece_trouvee'
-/// (trigger) et on ouvre le chiffrage du devis.
+/// Admin : sourcing d'une piece (v1.4.0).
+/// 1. Trouver la reference (lue par l'IA sur la photo, catalogue par VIN).
+/// 2. Comparer les fournisseurs (recherche pre-remplie, message en anglais),
+///    avec l'historique des sourcings deja faits.
+/// 3. Saisir la proposition retenue. A la validation, la demande passe a
+///    'piece_trouvee' (trigger) et on ouvre le chiffrage du devis.
 class SourcePartScreen extends ConsumerStatefulWidget {
   final PartsRequest request;
   const SourcePartScreen({super.key, required this.request});
@@ -40,8 +44,24 @@ class _SourcePartScreenState extends ConsumerState<SourcePartScreen> {
   bool _saving = false;
   String? _error;
 
+  /// Reference lue par l'IA sur la photo du client (si elle existe).
+  late final String? _aiRef = oemRefFromNotes(widget.request.notes);
+
+  @override
+  void initState() {
+    super.initState();
+    if (_aiRef != null) _partRef.text = _aiRef;
+    // Rafraichit les liens et l'historique quand la reference change.
+    _partRef.addListener(_onRefChanged);
+  }
+
+  void _onRefChanged() {
+    if (mounted) setState(() {});
+  }
+
   @override
   void dispose() {
+    _partRef.removeListener(_onRefChanged);
     for (final c in [
       _partRef,
       _priceKrw,
@@ -56,22 +76,8 @@ class _SourcePartScreenState extends ConsumerState<SourcePartScreen> {
     super.dispose();
   }
 
-  String _whatsappMessage() {
-    final r = widget.request;
-    final lines = <String>[
-      'Bonjour, je recherche une piece :',
-      'Piece : ${r.partName}',
-      'Vehicule : ${r.vehicleLabel}',
-      if (r.vehicleEngine != null && r.vehicleEngine!.isNotEmpty)
-        'Motorisation : ${r.vehicleEngine}',
-      if (r.vehicleVin != null && r.vehicleVin!.isNotEmpty)
-        'VIN : ${r.vehicleVin}',
-      if (r.notes != null && r.notes!.isNotEmpty) 'Details : ${r.notes}',
-      '',
-      'Pouvez-vous me donner la reference exacte, le prix et la disponibilite ? Merci.',
-    ];
-    return lines.join('\n');
-  }
+  String _supplierMessage() =>
+      supplierMessageEn(widget.request, reference: _partRef.text);
 
   void _open(String url) => openInNewTab(url);
 
@@ -88,10 +94,40 @@ class _SourcePartScreenState extends ConsumerState<SourcePartScreen> {
   }
 
   Future<void> _copyMessage() async {
-    await Clipboard.setData(ClipboardData(text: _whatsappMessage()));
+    await Clipboard.setData(ClipboardData(text: _supplierMessage()));
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-        content: Text('Message copié : collez-le dans WhatsApp ou un email.')));
+        content: Text('Message (en anglais) copié : collez-le dans WhatsApp '
+            'ou un email.')));
+  }
+
+  /// Reprend les valeurs d'un sourcing precedent dans le formulaire.
+  void _reuse(PastSourcing p) {
+    setState(() {
+      final sup = PartsConfig.suppliers.where((s) => s.id == p.source);
+      if (sup.isNotEmpty) _supplier = sup.first;
+      if (p.partRef != null) _partRef.text = p.partRef!;
+      _available = p.available;
+      // Le prix enregistre est en KRW : repris tel quel, ou converti en USD
+      // au taux du formulaire si le fournisseur affiche en USD.
+      if (p.buyPriceKrw != null) {
+        if (_isUsd) {
+          final rate =
+              num.tryParse(_usdRate.text.trim().replaceAll(',', '.')) ??
+                  PartsConfig.defaultUsdToKrw;
+          _priceKrw.text = (p.buyPriceKrw! / rate).toStringAsFixed(2);
+        } else {
+          _priceKrw.text = p.buyPriceKrw!.round().toString();
+        }
+      }
+      if (p.weightKg != null) _weight.text = p.weightKg.toString();
+      if (p.dimensions != null) _dimensions.text = p.dimensions!;
+      if (p.leadTimeDays != null) _leadTime.text = p.leadTimeDays.toString();
+      if (p.sourceUrl != null) _sourceUrl.text = p.sourceUrl!;
+    });
+    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        content: Text('Valeurs reprises : vérifiez le prix du jour avant '
+            "d'enregistrer.")));
   }
 
   Future<void> _submit() async {
@@ -137,6 +173,8 @@ class _SourcePartScreenState extends ConsumerState<SourcePartScreen> {
   @override
   Widget build(BuildContext context) {
     final r = widget.request;
+    final refText = _partRef.text.trim();
+    final hasVin = r.vehicleVin != null && r.vehicleVin!.isNotEmpty;
     return Scaffold(
       appBar: AppBar(title: const Text('Sourcer la pièce')),
       body: SafeArea(
@@ -163,18 +201,61 @@ class _SourcePartScreenState extends ConsumerState<SourcePartScreen> {
                       _info('Reçue le', Formatters.date(r.createdAt)),
                       if (r.notes != null && r.notes!.isNotEmpty)
                         _info('Détails', r.notes),
+                      if (r.partPhotoUrl != null)
+                        _PartPhoto(url: r.partPhotoUrl!),
                     ],
                   ),
                 ),
               ),
               const SizedBox(height: 16),
-              const Text('1. Choisir le fournisseur',
-                  style: TextStyle(fontWeight: FontWeight.w700)),
+
+              // ---------------------------------------------------------
+              _step('1. Trouver la référence'),
+              if (_aiRef != null)
+                _hint(Icons.auto_awesome,
+                    'Référence lue sur la photo du client : $_aiRef '
+                    '(déjà remplie, à vérifier).'),
+              _field(_partRef, 'Référence constructeur (OEM)'),
+              if (hasVin)
+                OutlinedButton.icon(
+                  onPressed: () =>
+                      _open(PartsConfig.vinCatalogUrl(r.vehicleVin!)),
+                  icon: const Icon(Icons.menu_book, size: 18),
+                  label: const Text('Catalogue constructeur par VIN'),
+                )
+              else
+                _hint(Icons.info_outline,
+                    'Pas de VIN : demandez au client une photo de sa carte '
+                    'grise pour trouver la référence exacte.'),
+              const Divider(height: 32),
+
+              // ---------------------------------------------------------
+              _step('2. Comparer les fournisseurs'),
+              Text(
+                  refText.isEmpty
+                      ? 'Saisissez la référence pour ouvrir chaque site '
+                          'directement sur la recherche.'
+                      : 'Chaque bouton cherche « $refText ». Les messages '
+                          'aux fournisseurs sont en anglais.',
+                  style:
+                      const TextStyle(fontSize: 11.5, color: AppColors.gris)),
               const SizedBox(height: 8),
+              for (final sup in PartsConfig.suppliers) _supplierTile(sup),
+              _History(
+                historyKey: HistoryKey(
+                    r.id ?? '', refText, r.partName, r.vehicleModel),
+                onReuse: _reuse,
+              ),
+              const Divider(height: 32),
+
+              // ---------------------------------------------------------
+              _step('3. Saisir la proposition'),
               DropdownButtonFormField<PartsSupplier>(
+                key: ValueKey(_supplier.id),
                 initialValue: _supplier,
                 isExpanded: true,
-                decoration: const InputDecoration(labelText: 'Fournisseur'),
+                decoration:
+                    const InputDecoration(labelText: 'Fournisseur retenu'),
                 items: [
                   for (final sup in PartsConfig.suppliers)
                     DropdownMenuItem(value: sup, child: Text(sup.name)),
@@ -185,42 +266,8 @@ class _SourcePartScreenState extends ConsumerState<SourcePartScreen> {
               ),
               const SizedBox(height: 6),
               Text(_supplier.note,
-                  style: const TextStyle(fontSize: 11.5, color: AppColors.gris)),
-              const SizedBox(height: 10),
-              Row(children: [
-                Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: () => _open(_supplier.urlFor(_partRef.text)),
-                    icon: const Icon(Icons.travel_explore, size: 18),
-                    label: const Text('Ouvrir le site'),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: _supplier.whatsapp != null
-                      ? ElevatedButton.icon(
-                          onPressed: () => _open(AppInfo.whatsappTo(
-                              _supplier.whatsapp!, _whatsappMessage())),
-                          icon: const Icon(Icons.chat, size: 18),
-                          label: const Text('WhatsApp'),
-                        )
-                      : ElevatedButton.icon(
-                          onPressed: _copyMessage,
-                          icon: const Icon(Icons.copy, size: 18),
-                          label: const Text('Copier le message'),
-                        ),
-                ),
-              ]),
-              const SizedBox(height: 6),
-              const Text(
-                  'Le message est pré-rempli avec le véhicule, le VIN et la '
-                  'pièce. Si la référence est saisie plus bas, le site '
-                  's\'ouvre sur la recherche (quand il le permet).',
-                  style: TextStyle(fontSize: 11.5, color: AppColors.gris)),
-              const Divider(height: 32),
-              const Text('2. Saisir la proposition',
-                  style: TextStyle(fontWeight: FontWeight.w700)),
-              const SizedBox(height: 8),
+                  style:
+                      const TextStyle(fontSize: 11.5, color: AppColors.gris)),
               SwitchListTile(
                 contentPadding: EdgeInsets.zero,
                 title: const Text('Pièce disponible'),
@@ -228,7 +275,6 @@ class _SourcePartScreenState extends ConsumerState<SourcePartScreen> {
                 activeThumbColor: AppColors.vert,
                 onChanged: (v) => setState(() => _available = v),
               ),
-              _field(_partRef, 'Référence / n° de pièce'),
               _field(_priceKrw, 'Prix d\'achat (${_supplier.currency}) *',
                   keyboard: const TextInputType.numberWithOptions(decimal: true),
                   required: true),
@@ -267,6 +313,87 @@ class _SourcePartScreenState extends ConsumerState<SourcePartScreen> {
     );
   }
 
+  /// Une carte par fournisseur : chercher, ecrire, retenir.
+  Widget _supplierTile(PartsSupplier sup) {
+    final selected = sup.id == _supplier.id;
+    final refText = _partRef.text.trim();
+    return Card(
+      margin: const EdgeInsets.only(bottom: 8),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(
+            color: selected ? AppColors.vert : Colors.black12,
+            width: selected ? 2 : 1),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(12, 6, 8, 10),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(children: [
+              Expanded(
+                child: Text('${sup.name}  ·  ${sup.currency}',
+                    style: const TextStyle(fontWeight: FontWeight.w700)),
+              ),
+              if (selected)
+                const Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 8, vertical: 12),
+                  child: Text('Retenu',
+                      style: TextStyle(
+                          color: AppColors.vert,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700)),
+                )
+              else
+                TextButton(
+                  onPressed: () => setState(() => _supplier = sup),
+                  child: const Text('Retenir'),
+                ),
+            ]),
+            Wrap(spacing: 8, runSpacing: 6, children: [
+              OutlinedButton.icon(
+                onPressed: () => _open(sup.urlFor(refText)),
+                icon: const Icon(Icons.travel_explore, size: 16),
+                label: Text(refText.isEmpty
+                    ? 'Ouvrir le site'
+                    : sup.hasSearch
+                        ? 'Chercher'
+                        : 'Chercher (Google)'),
+              ),
+              if (sup.whatsapp != null)
+                OutlinedButton.icon(
+                  onPressed: () => _open(
+                      AppInfo.whatsappTo(sup.whatsapp!, _supplierMessage())),
+                  icon: const Icon(Icons.chat, size: 16),
+                  label: const Text('WhatsApp'),
+                )
+              else
+                OutlinedButton.icon(
+                  onPressed: _copyMessage,
+                  icon: const Icon(Icons.copy, size: 16),
+                  label: const Text('Copier le message'),
+                ),
+            ]),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _step(String title) => Padding(
+        padding: const EdgeInsets.only(bottom: 8),
+        child: Text(title, style: const TextStyle(fontWeight: FontWeight.w700)),
+      );
+
+  Widget _hint(IconData icon, String text) => Padding(
+        padding: const EdgeInsets.only(bottom: 10),
+        child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Icon(icon, size: 16, color: AppColors.vert),
+          const SizedBox(width: 6),
+          Expanded(child: Text(text, style: const TextStyle(fontSize: 12.5))),
+        ]),
+      );
+
   Widget _info(String label, String? value) {
     if (value == null || value.isEmpty) return const SizedBox.shrink();
     return Padding(
@@ -299,6 +426,99 @@ class _SourcePartScreenState extends ConsumerState<SourcePartScreen> {
         validator: required
             ? (v) => (v == null || v.trim().isEmpty) ? 'Obligatoire' : null
             : null,
+      ),
+    );
+  }
+}
+
+/// Photo de la piece envoyee par le client (lien rafraichi, clic = plein
+/// ecran dans un nouvel onglet).
+class _PartPhoto extends ConsumerWidget {
+  final String url;
+  const _PartPhoto({required this.url});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final u = ref.watch(freshPhotoUrlProvider(url)).value;
+    if (u == null) return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.only(top: 10),
+      child: InkWell(
+        onTap: () => openInNewTab(u),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(12),
+          child: Image.network(u,
+              height: 180,
+              fit: BoxFit.cover,
+              errorBuilder: (_, _, _) =>
+                  const Text('Photo jointe (cliquez pour l\'ouvrir)')),
+        ),
+      ),
+    );
+  }
+}
+
+/// « Déjà sourcé » : meme reference, ou meme piece sur le meme modele.
+class _History extends ConsumerWidget {
+  final HistoryKey historyKey;
+  final void Function(PastSourcing) onReuse;
+  const _History({required this.historyKey, required this.onReuse});
+
+  static String _supplierName(String? id) {
+    for (final s in PartsConfig.suppliers) {
+      if (s.id == id) return s.name;
+    }
+    return id ?? 'Fournisseur';
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final items = ref.watch(sourcingHistoryProvider(historyKey)).value ??
+        const <PastSourcing>[];
+    if (items.isEmpty) return const SizedBox.shrink();
+    return Card(
+      color: AppColors.grisClair,
+      margin: const EdgeInsets.only(top: 8),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Row(children: [
+              Icon(Icons.history, size: 18),
+              SizedBox(width: 6),
+              Text('Déjà sourcé', style: TextStyle(fontWeight: FontWeight.w700)),
+            ]),
+            for (final p in items)
+              Padding(
+                padding: const EdgeInsets.only(top: 8),
+                child: Row(children: [
+                  Expanded(
+                    child: Text(
+                      [
+                        '${_supplierName(p.source)} — '
+                            '${Formatters.date(p.createdAt)}',
+                        [
+                          if (p.partRef != null) 'réf. ${p.partRef}',
+                          if (p.buyPriceKrw != null)
+                            Formatters.krw(p.buyPriceKrw),
+                          if (p.weightKg != null) '${p.weightKg} kg',
+                          if (!p.available) 'indisponible',
+                        ].join(' · '),
+                        '${p.partName} — ${p.vehicle}'
+                            '${p.sameRef ? '' : ' (même pièce, même modèle)'}',
+                      ].join('\n'),
+                      style: const TextStyle(fontSize: 12),
+                    ),
+                  ),
+                  TextButton(
+                    onPressed: () => onReuse(p),
+                    child: const Text('Reprendre'),
+                  ),
+                ]),
+              ),
+          ],
+        ),
       ),
     );
   }
