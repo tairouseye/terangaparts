@@ -69,7 +69,13 @@ final routerProvider = Provider<GoRouter>((ref) {
       if (isGuest && onAuthPage) return null;
 
       // Connecte : on attend le profil pour connaitre le role.
-      final profile = ref.read(currentProfileProvider).value;
+      final profileAsync = ref.read(currentProfileProvider);
+      // Profil illisible (reseau, compte supprime) : ne pas rester bloque
+      // sur l'ecran de chargement.
+      if (profileAsync.hasError && !profileAsync.isLoading) {
+        return onAuthPage ? null : '/login';
+      }
+      final profile = profileAsync.value;
       if (profile == null) return loc == '/' ? null : '/';
 
       final home = switch (profile.role) {

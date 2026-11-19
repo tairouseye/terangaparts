@@ -39,7 +39,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             email: _email.text.trim(),
             password: _password.text,
           );
-      // La redirection est geree par le routeur (refresh sur authState).
+      // Recharge le profil puis passe par l'accueil : le routeur envoie vers
+      // l'espace du role (sans dependre du rafraichissement automatique).
+      ref.invalidate(currentProfileProvider);
+      if (mounted) context.go('/');
     } catch (e) {
       setState(() =>
           _error = 'Connexion impossible. Vérifiez vos identifiants.');

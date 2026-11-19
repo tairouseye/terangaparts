@@ -325,6 +325,8 @@ class _QuickRequestScreenState extends ConsumerState<QuickRequestScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Se reconstruit a chaque changement d'auth (connexion, session invitee).
+    ref.watch(authStateProvider);
     final loggedIn = ref.watch(authServiceProvider).currentUser != null;
     if (loggedIn) _prefillContact();
     final vehicles = loggedIn
