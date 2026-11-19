@@ -28,6 +28,14 @@ class _AboutScreenState extends State<AboutScreen> {
   /// La version vient du pubspec (via package_info_plus), pas d'une constante
   /// codee en dur : impossible qu'elle se desynchronise du build.
   Future<void> _loadVersion() async {
+    // Version qui tourne (embarquee au build) en priorite.
+    if (AppInfo.appVersion.isNotEmpty) {
+      final parts = AppInfo.appVersion.split('+');
+      setState(() => _version = parts.length > 1
+          ? 'v${parts[0]} (build ${parts[1]})'
+          : 'v${parts[0]}');
+      return;
+    }
     try {
       final info = await PackageInfo.fromPlatform();
       if (!mounted) return;

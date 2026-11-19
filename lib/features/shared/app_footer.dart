@@ -73,7 +73,10 @@ class _VersionChip extends StatelessWidget {
     return FutureBuilder<PackageInfo>(
       future: PackageInfo.fromPlatform(),
       builder: (context, snap) {
-        final v = snap.hasData ? 'v${snap.data!.version}' : 'v…';
+        // Version qui TOURNE (embarquee au build), sinon celle du serveur.
+        final v = AppInfo.appVersion.isNotEmpty
+            ? 'v${AppInfo.appVersion.split('+').first}'
+            : (snap.hasData ? 'v${snap.data!.version}' : 'v…');
         final date =
             AppInfo.buildDate.isEmpty ? '' : ' · ${AppInfo.buildDate}';
         return Text('$v$date',

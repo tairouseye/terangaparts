@@ -53,15 +53,11 @@ mais rien n'est persisté : tout repart à zéro au redémarrage.
 ## Déploiement (GitHub Pages)
 
 - **Prod** : https://terangaparts.gesprosn.org
-- Dépôt GitHub : **à créer** (dépôt propre à Teranga Parts, distinct de
-  `tairouseye/terangamobility`).
-- DNS : CNAME `terangaparts` → `<compte>.github.io` (Cloudflare, **DNS only**).
+- Dépôt GitHub : `tairouseye/terangaparts` (code sur `main`, site sur `gh-pages`).
+- DNS : CNAME `terangaparts` → `tairouseye.github.io` (Cloudflare, **DNS only**).
 
 ```bash
-flutter build web --release \
-  --dart-define=SUPABASE_URL=https://<ref>.supabase.co \
-  --dart-define=SUPABASE_PUBLISHABLE_KEY=sb_publishable_...
-cd build/web && cp index.html 404.html   # routage SPA sur GitHub Pages
+tools/build_web.sh   # version (pubspec) + date embarquées, 404.html prêt
 ```
 Puis publier `build/web` sur la branche `gh-pages` du dépôt Teranga Parts
 (`web/CNAME` contient déjà `terangaparts.gesprosn.org`).

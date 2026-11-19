@@ -1,32 +1,47 @@
 # Journal des versions — Teranga Parts
 
-La version affichée dans l'application (pied de page, « À propos », page de
-connexion) vient de `pubspec.yaml` (`version: X.Y.Z+build`).
-À chaque mise en ligne : augmenter la version, ajouter une entrée ici, et
-construire avec `--dart-define=BUILD_DATE=AAAA-MM-JJ`.
+Format inspiré de GesSchool : version la plus récente en haut, un titre par
+version, des points en français simple.
+La version vient de `pubspec.yaml` (`version: X.Y.Z+build`) et s'affiche dans
+l'application (pied de page, « À propos », page d'accueil).
+À chaque mise en ligne : augmenter la version, ajouter une entrée ici, puis
+construire avec `tools/build_web.sh` (version et date embarquées).
 
 - **X** (majeure) : changement important de fonctionnement
 - **Y** (mineure) : nouvelle fonctionnalité
 - **Z** (correctif) : correction sans nouvelle fonctionnalité
 - **+build** : augmente de 1 à chaque mise en ligne
 
-## 1.2.1+4 — 2026-11-19
+## [1.3.0] — L'administrateur est prévenu, et l'app aussi
+Migration 0021.
+- **Alertes automatiques** (mig. 0021) : chaque nouvelle demande arrive dans la
+  cloche 🔔 de l'administrateur, avec la pièce, le véhicule et le nom du client.
+  Le client est prévenu quand son devis est prêt et à chaque étape de sa
+  commande. Les acomptes et soldes déclarés préviennent l'administrateur.
+- **À traiter** sur l'accueil administrateur : les demandes à sourcer, les
+  pièces à chiffrer et les acomptes à vérifier, de la plus ancienne à la plus
+  récente. Chaque ligne a un bouton **Traiter** et un bouton **WhatsApp** vers
+  le client. Le bloc se met à jour tout seul quand une demande arrive.
+- **Nouvelle version disponible** : un bandeau propose de recharger quand une
+  mise à jour est publiée. La version affichée est celle qui tourne vraiment.
+
+## [1.2.1] — 2026-11-19
 - Connexion : redirection directe vers l'espace du compte après « Se connecter ».
 - Liens email (confirmation, mot de passe oublié) : retour toujours vers le site.
 - Plus de blocage possible sur l'écran de chargement.
 - Version affichée aussi sur le formulaire de demande.
 
-## 1.2.0+3 — 2026-11-19
+## [1.2.0] — 2026-11-19
 - Lecture des photos par l'IA : carte grise (VIN, marque, modèle, année) et
   pièce (nom, catégorie, référence constructeur). 30 photos par jour et par
   personne.
 - Seoul AutoParts : WhatsApp et conditions dans la fiche fournisseur.
 
-## 1.1.0+2 — 2026-11-19
+## [1.1.0] — 2026-11-19
 - Demande de pièce sans compte (session invitée), compte facultatif ensuite.
 - Correction de sécurité : le rôle d'un nouveau compte est toujours « client ».
 
-## 1.0.0+1 — 2026-11-19
+## [1.0.0] — 2026-11-19
 - Séparation d'avec TerangaMobility : pièces détachées uniquement, nouvelle
   marque, domaine terangaparts.gesprosn.org, projet Supabase dédié.
 - Recherche de pièces auprès de plusieurs fournisseurs.

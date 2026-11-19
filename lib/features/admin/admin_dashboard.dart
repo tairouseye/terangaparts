@@ -4,8 +4,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/theme/app_theme.dart';
 import '../../providers/admin_counts_providers.dart';
 import '../../providers/auth_providers.dart';
+import '../../providers/notification_providers.dart';
 import '../shared/dashboard_scaffold.dart';
 import '../shared/section_group.dart';
+import 'admin_todo.dart';
 import 'parts_requests_screen.dart';
 import 'quote_requests_screen.dart';
 import 'orders_screen.dart';
@@ -17,6 +19,16 @@ class AdminDashboard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // Nouvelle notification (nouvelle demande, paiement…) : on rafraichit
+    // « À traiter » et les compteurs sans que l'admin recharge la page.
+    ref.listen(unreadCountProvider, (prev, next) {
+      final before = prev?.valueOrNull ?? 0;
+      final now = next.valueOrNull ?? 0;
+      if (now > before) {
+        ref.invalidate(adminTodoProvider);
+        ref.invalidate(adminCountsProvider);
+      }
+    });
     final profile = ref.watch(currentProfileProvider).value;
     final counts = ref.watch(adminCountsProvider).valueOrNull;
     final toHandle = counts == null
@@ -31,6 +43,8 @@ class AdminDashboard extends ConsumerWidget {
             style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w700)),
         const SizedBox(height: 4),
         _Summary(toHandle: toHandle, counts: counts),
+        const SizedBox(height: 16),
+        const AdminTodoSection(),
         const SizedBox(height: 20),
         SectionGroup(
           color: AppColors.or,
@@ -63,6 +77,7 @@ class AdminDashboard extends ConsumerWidget {
     await Navigator.of(context)
         .push(MaterialPageRoute(builder: (_) => page));
     ref.invalidate(adminCountsProvider);
+    ref.invalidate(adminTodoProvider);
   }
 }
 

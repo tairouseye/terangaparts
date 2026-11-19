@@ -15,6 +15,13 @@ class AppInfo {
   static const String publisherShort = 'GesPro';
   static const String publisherSite = 'https://gesprosn.org';
 
+  /// Version EMBARQUEE au build (« 1.3.0+5 »), injectee par tools/build_web.sh
+  /// depuis pubspec.yaml. Sur le web, package_info_plus lit version.json sur
+  /// le SERVEUR : il donne la derniere version publiee, pas celle qui tourne.
+  /// Vide en dev (flutter run) -> pas de detection de mise a jour.
+  static const String appVersion =
+      String.fromEnvironment('APP_VERSION', defaultValue: '');
+
   /// Date de deploiement, injectee au build :
   ///   flutter build web --dart-define=BUILD_DATE=2026-07-17
   /// Vide en dev -> on n'affiche que la version du pubspec.
