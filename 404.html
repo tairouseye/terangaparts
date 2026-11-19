@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base href="/">
+
+  <!-- Force HTTPS : redirige tout visiteur arrive en http:// vers https://
+       (le certificat TLS est en place). Complete « Enforce HTTPS » de GitHub. -->
+  <script>
+    if (location.protocol === 'http:') {
+      location.replace('https:' + location.href.substring(location.protocol.length));
+    }
+  </script>
+
+  <meta charset="UTF-8">
+  <meta content="IE=Edge" http-equiv="X-UA-Compatible">
+  <meta name="description"
+        content="Teranga Parts — Pieces detachees d'origine Hyundai, Kia, SsangYong. Devis en ligne, livraison au Senegal.">
+  <meta name="theme-color" content="#1E3A5F">
+
+  <!-- Open Graph / partage (apercu de marque par defaut) -->
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Teranga Parts">
+  <meta property="og:title" content="Teranga Parts — Pieces detachees coreennes">
+  <meta property="og:description"
+        content="Pieces d'origine coreennes livrees au Senegal. Devis detaille, suivi de commande, paiement securise.">
+  <meta property="og:url" content="https://terangaparts.gesprosn.org/">
+  <meta property="og:image" content="https://terangaparts.gesprosn.org/icons/Icon-512.png">
+  <meta property="og:locale" content="fr_FR">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Teranga Parts — Pieces detachees coreennes">
+  <meta name="twitter:description" content="Pieces d'origine coreennes, livrees au Senegal.">
+  <meta name="twitter:image" content="https://terangaparts.gesprosn.org/icons/Icon-512.png">
+
+  <!-- Facebook Pixel : actif seulement si un vrai Pixel ID est renseigne. -->
+  <script>
+    window.FB_PIXEL_ID = 'REPLACE_ME'; // Pixel dedie Teranga Parts a creer
+    if (window.FB_PIXEL_ID && !/^REPLACE/.test(window.FB_PIXEL_ID)) {
+      !function(f,b,e,v,n,t,s)
+      {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+      n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+      if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+      n.queue=[];t=b.createElement(e);t.async=!0;
+      t.src=v;s=b.getElementsByTagName(e)[0];
+      s.parentNode.insertBefore(t,s)}(window, document,'script',
+      'https://connect.facebook.net/en_US/fbevents.js');
+      fbq('init', window.FB_PIXEL_ID);
+      fbq('track', 'PageView');
+    }
+  </script>
+
+  <!-- iOS meta tags & icons -->
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <meta name="apple-mobile-web-app-title" content="Teranga Parts">
+  <link rel="apple-touch-icon" href="icons/Icon-192.png">
+
+  <link rel="icon" type="image/png" href="favicon.png"/>
+
+  <title>Teranga Parts — Pièces détachées coréennes</title>
+  <link rel="manifest" href="manifest.json">
+
+  <style>
+    /* Ecran de demarrage affiche AVANT Flutter : intro GesPro (bref) puis
+       marque Teranga Parts, avec une barre de chargement. */
+    html, body { margin: 0; padding: 0; height: 100%; background: #1E3A5F; }
+    #boot {
+      position: fixed; inset: 0; z-index: 9999;
+      background: linear-gradient(160deg, #1E3A5F 0%, #15293F 100%);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      transition: opacity .4s ease;
+    }
+    #boot.hide { opacity: 0; pointer-events: none; }
+
+    /* Deux phases superposees, centrees, en fondu. */
+    #boot .phase {
+      position: absolute; inset: 0;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      opacity: 0; transition: opacity .5s ease;
+    }
+    #boot .phase.show { opacity: 1; }
+
+    /* Phase 1 — GesPro */
+    #boot .gp-mark { color: #fff; font-size: 68px; font-weight: 800; letter-spacing: -1.5px; }
+    #boot .gp-mark em { color: #C9A24B; font-style: normal; }
+    #boot .gp-sub { color: #C9A24B; font-size: 16px; letter-spacing: 7px; font-weight: 700; margin-top: 12px; }
+    #boot .gp-tag { color: rgba(255,255,255,.55); font-size: 15px; margin-top: 30px; letter-spacing: .5px; }
+
+    /* Phase 2 — Teranga Parts : fond blanc plein, logo SANS cadre.
+       (Le logo a un fond blanc + du texte bleu nuit : sur un fond blanc il se
+       fond parfaitement, aucun cadre visible.) */
+    #boot #phase-teranga { background: #fff; }
+    #boot .logo-card { max-width: 88vw; }
+    #boot .logo-card img { display: block; width: 360px; max-width: 76vw; height: auto; }
+
+    /* Barre de chargement indeterminee (bas de l'ecran) */
+    #boot .loadbar {
+      position: absolute; left: 50%; bottom: 12%; transform: translateX(-50%);
+      width: 190px; height: 4px; border-radius: 4px;
+      background: rgba(255,255,255,.16); overflow: hidden;
+    }
+    #boot .loadbar::before {
+      content: ''; position: absolute; top: 0; height: 100%; width: 45%;
+      border-radius: 4px; background: #C9A24B;
+      animation: slide 1.15s cubic-bezier(.4,0,.2,1) infinite;
+    }
+    @keyframes slide { 0% { left: -45%; } 100% { left: 100%; } }
+  </style>
+</head>
+<body>
+  <div id="boot">
+    <div class="phase show" id="phase-gespro">
+      <div class="gp-mark">Ges<em>Pro</em></div>
+      <div class="gp-sub">DIGITAL</div>
+      <div class="gp-tag">vous présente</div>
+    </div>
+    <div class="phase" id="phase-teranga">
+      <div class="logo-card"><img src="logo.png" alt="Teranga Parts"></div>
+    </div>
+    <div class="loadbar"></div>
+  </div>
+
+  <script>
+    // Enchaine l'intro : GesPro (bref) puis Teranga Parts.
+    var bootStart = Date.now();
+    setTimeout(function () {
+      var g = document.getElementById('phase-gespro');
+      var t = document.getElementById('phase-teranga');
+      if (g) g.classList.remove('show');
+      if (t) t.classList.add('show');
+    }, 1000);
+  </script>
+
+  <script>
+    // Anti-cache : desinscrit tout ancien service worker et vide ses caches.
+    // Evite qu'un build precedent reste servi en boucle (probleme "nouvelle
+    // version"). L'app est deployee sans service worker (--pwa-strategy=none).
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.getRegistrations().then(function (regs) {
+        regs.forEach(function (r) { r.unregister(); });
+      }).catch(function () {});
+      if (window.caches && caches.keys) {
+        caches.keys().then(function (keys) {
+          keys.forEach(function (k) { caches.delete(k); });
+        }).catch(function () {});
+      }
+    }
+  </script>
+
+  <script>
+    // Retire l'ecran de chargement quand Flutter est pret, MAIS garde une duree
+    // minimale d'affichage pour que le logo Teranga Parts soit bien visible
+    // (sinon il « passe trop vite » si Flutter charge instantanement).
+    var MIN_SHOWN = 2800; // ms
+    window.addEventListener('flutter-first-frame', function () {
+      var boot = document.getElementById('boot');
+      if (!boot) return;
+      var wait = Math.max(0, MIN_SHOWN - (Date.now() - (window.bootStart || bootStart)));
+      setTimeout(function () {
+        boot.classList.add('hide');
+        setTimeout(function () { boot.remove(); }, 400);
+      }, wait);
+    });
+  </script>
+
+  <script src="flutter_bootstrap.js" async></script>
+</body>
+</html>
