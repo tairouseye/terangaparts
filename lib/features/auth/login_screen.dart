@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/widgets/teranga_logo.dart';
 import '../../providers/auth_providers.dart';
+import '../../services/auth_service.dart';
 import '../shared/gespro_credit.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
@@ -85,7 +86,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     try {
       await ref
           .read(authServiceProvider)
-          .sendPasswordReset(email, redirectTo: Uri.base.origin);
+          .sendPasswordReset(email, redirectTo: siteRedirectUrl());
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
             content: Text(

@@ -2,6 +2,13 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/app_user.dart';
 import '../models/enums.dart';
 
+/// Adresse de retour des liens envoyes par email (confirmation, nouveau mot
+/// de passe) : l'adresse du site en cours, sinon le domaine de production.
+String siteRedirectUrl() =>
+    Uri.base.hasScheme && Uri.base.scheme.startsWith('http')
+        ? '${Uri.base.origin}/'
+        : 'https://terangaparts.gesprosn.org/';
+
 /// Acces centralise a Supabase Auth + profil.
 class AuthService {
   final SupabaseClient _client;
@@ -25,6 +32,9 @@ class AuthService {
     await _client.auth.signUp(
       email: email,
       password: password,
+      // Le lien de confirmation ramene TOUJOURS sur le site (et non sur le
+      // « Site URL » par defaut de Supabase, souvent localhost).
+      emailRedirectTo: siteRedirectUrl(),
       data: {
         'full_name': fullName,
         'whatsapp': whatsapp,

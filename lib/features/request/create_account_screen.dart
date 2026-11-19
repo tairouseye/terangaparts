@@ -4,11 +4,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../core/theme/app_theme.dart';
 import '../../providers/auth_providers.dart';
-
-/// Adresse de retour des liens envoyes par email (confirmation d'email).
-String _redirectUrl() => Uri.base.hasScheme && Uri.base.scheme.startsWith('http')
-    ? '${Uri.base.origin}/'
-    : 'https://terangaparts.gesprosn.org/';
+import '../../services/auth_service.dart';
 
 /// Encart « Créer mon compte (facultatif) » affiche aux invites.
 class GuestAccountCard extends StatelessWidget {
@@ -83,7 +79,7 @@ class _CreateAccountScreenState extends ConsumerState<CreateAccountScreen> {
     try {
       await ref
           .read(authServiceProvider)
-          .attachEmail(_email.text.trim(), redirectTo: _redirectUrl());
+          .attachEmail(_email.text.trim(), redirectTo: siteRedirectUrl());
       setState(() => _sent = true);
     } on AuthException catch (e) {
       setState(() => _error = e.message.contains('already')
