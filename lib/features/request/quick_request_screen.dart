@@ -15,6 +15,7 @@ import '../../providers/auth_providers.dart';
 import '../../providers/request_providers.dart';
 import '../../providers/vehicle_providers.dart';
 import '../../services/photo_analysis_service.dart';
+import '../shared/app_footer.dart';
 import 'create_account_screen.dart';
 
 /// Marques proposees (vehicules coreens).
@@ -349,6 +350,8 @@ class _QuickRequestScreenState extends ConsumerState<QuickRequestScreen> {
             ),
         ],
       ),
+      // Version + assistance visibles des la page d'accueil.
+      bottomNavigationBar: const AppFooter(),
       body: SafeArea(
         child: Center(
           child: ConstrainedBox(
@@ -685,6 +688,7 @@ class RequestSentScreen extends StatelessWidget {
       appBar: AppBar(
           title: const Text('Demande envoyée'),
           automaticallyImplyLeading: false),
+      bottomNavigationBar: const AppFooter(),
       body: SafeArea(
         child: Center(
           child: ConstrainedBox(
