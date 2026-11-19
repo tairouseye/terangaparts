@@ -5,7 +5,7 @@ import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/formatters.dart';
 import '../../../core/widgets/status_badge.dart';
 import '../../../providers/request_providers.dart';
-import 'new_request_screen.dart';
+import '../../request/quick_request_screen.dart';
 
 /// Liste des demandes du client avec leur statut (Lot 3).
 class RequestsScreen extends ConsumerWidget {
@@ -18,7 +18,7 @@ class RequestsScreen extends ConsumerWidget {
       appBar: AppBar(title: const Text('Mes demandes & devis')),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => Navigator.of(context).push(MaterialPageRoute(
-          builder: (_) => const NewRequestScreen(),
+          builder: (_) => const QuickRequestScreen(),
         )),
         backgroundColor: AppColors.primary,
         icon: const Icon(Icons.add),

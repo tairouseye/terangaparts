@@ -12,9 +12,12 @@ import '../../features/auth/splash_screen.dart';
 import '../../features/client/client_dashboard.dart';
 import '../../features/partner_kr/partner_dashboard.dart';
 import '../../features/admin/admin_dashboard.dart';
+import '../../features/request/quick_request_screen.dart';
 
-/// Chemins accessibles SANS compte.
-bool _isPublic(String loc) => loc == '/login' || loc == '/signup';
+/// Chemins accessibles SANS compte. La demande de piece est PUBLIQUE :
+/// le compte est facultatif (session invitee ouverte a l'envoi).
+bool _isPublic(String loc) =>
+    loc == '/demande' || loc == '/login' || loc == '/signup';
 
 /// Routeur global avec redirection selon l'etat d'auth et le role.
 final routerProvider = Provider<GoRouter>((ref) {
@@ -30,6 +33,8 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
           path: '/reset-password',
           builder: (_, _) => const ResetPasswordScreen()),
+      GoRoute(
+          path: '/demande', builder: (_, _) => const QuickRequestScreen()),
       GoRoute(path: '/client', builder: (_, _) => const ClientDashboard()),
       GoRoute(path: '/partner', builder: (_, _) => const PartnerDashboard()),
       GoRoute(path: '/admin', builder: (_, _) => const AdminDashboard()),
@@ -49,11 +54,19 @@ final routerProvider = Provider<GoRouter>((ref) {
       final session = ref.read(authServiceProvider).currentSession;
       final onAuthPage = loc == '/login' || loc == '/signup';
 
-      // Non connecte -> page de connexion.
+      // Non connecte -> formulaire de demande (pas de mur de connexion).
       if (session == null) {
-        if (loc == '/') return '/login';
+        if (loc == '/') return '/demande';
         return _isPublic(loc) ? null : '/login';
       }
+
+      // Le formulaire reste accessible pendant l'envoi (la session invitee
+      // s'ouvre et le profil se charge : ne pas quitter l'ecran).
+      if (loc == '/demande') return null;
+
+      // Un invite peut ouvrir connexion / inscription (compte existant).
+      final isGuest = ref.read(authServiceProvider).isGuest;
+      if (isGuest && onAuthPage) return null;
 
       // Connecte : on attend le profil pour connaitre le role.
       final profile = ref.read(currentProfileProvider).value;

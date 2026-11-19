@@ -23,7 +23,7 @@ class PrivacyScreen extends StatelessWidget {
             const SizedBox(height: 20),
             const _Section(
               'Données que nous collectons',
-              'Pour traiter vos demandes (véhicules et pièces), nous collectons les '
+              'Pour traiter vos demandes de pièces, nous collectons les '
                   'informations que vous fournissez : nom, numéro WhatsApp, email, '
                   'ville, ainsi que les détails de vos demandes et commandes. Ces '
                   'données sont conservées de façon sécurisée et ne servent qu\'au '
@@ -34,7 +34,7 @@ class PrivacyScreen extends StatelessWidget {
               'Notre site utilise le Pixel Facebook (Meta) pour mesurer l\'audience '
                   'et proposer des publicités pertinentes aux visiteurs. Le Pixel peut '
                   'déposer des cookies et transmettre à Meta des informations sur votre '
-                  'navigation (pages vues, véhicules consultés). Vous pouvez gérer vos '
+                  'navigation (pages vues). Vous pouvez gérer vos '
                   'préférences publicitaires depuis les paramètres de votre compte '
                   'Facebook, ou bloquer ces cookies via votre navigateur.',
             ),

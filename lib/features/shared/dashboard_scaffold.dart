@@ -19,6 +19,34 @@ class DashboardScaffold extends ConsumerWidget {
     this.floatingActionButton,
   });
 
+  /// Un invite (sans email) qui se deconnecte perd l'acces a ses demandes :
+  /// on le previent avant.
+  Future<void> _signOut(BuildContext context, WidgetRef ref) async {
+    final auth = ref.read(authServiceProvider);
+    if (auth.isGuest) {
+      final ok = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text('Quitter le mode invité ?'),
+          content: const Text(
+              'Sans compte, vous ne pourrez plus suivre vos demandes depuis '
+              'l\'application (nous vous contacterons toujours sur WhatsApp). '
+              'Créez votre compte pour les garder.'),
+          actions: [
+            TextButton(
+                onPressed: () => Navigator.pop(ctx, false),
+                child: const Text('Rester')),
+            TextButton(
+                onPressed: () => Navigator.pop(ctx, true),
+                child: const Text('Me déconnecter')),
+          ],
+        ),
+      );
+      if (ok != true) return;
+    }
+    await auth.signOut();
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return Scaffold(
@@ -36,7 +64,7 @@ class DashboardScaffold extends ConsumerWidget {
           IconButton(
             tooltip: 'Se déconnecter',
             icon: const Icon(Icons.logout),
-            onPressed: () => ref.read(authServiceProvider).signOut(),
+            onPressed: () => _signOut(context, ref),
           ),
         ],
       ),

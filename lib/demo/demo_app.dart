@@ -67,7 +67,7 @@ class _DemoLanding extends StatelessWidget {
                   _RoleButton(
                     icon: Icons.person,
                     title: 'Espace Client',
-                    subtitle: 'Vehicules, demandes, devis, suivi',
+                    subtitle: 'Demandes, devis, commandes, suivi',
                     onTap: () => _open(context, const ClientDashboard()),
                   ),
                   const SizedBox(height: 12),

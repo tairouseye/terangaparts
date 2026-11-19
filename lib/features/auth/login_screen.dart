@@ -173,19 +173,19 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     Expanded(child: Divider()),
                   ]),
                   const SizedBox(height: 8),
-                  // Vitrine : on peut parcourir le catalogue sans compte.
+                  // Le compte est facultatif : demande directe sans compte.
                   OutlinedButton.icon(
-                    onPressed: () => context.push('/vehicules'),
-                    icon: const Icon(Icons.directions_car_filled, size: 18),
-                    label: const Text('Voir les véhicules de Corée'),
+                    onPressed: () => context.go('/demande'),
+                    icon: const Icon(Icons.build, size: 18),
+                    label: const Text('Demander une pièce sans compte'),
                     style: OutlinedButton.styleFrom(
                       minimumSize: const Size.fromHeight(50),
                     ),
                   ),
                   const SizedBox(height: 6),
                   const Text(
-                    'Consultation libre — un compte n\'est nécessaire que pour '
-                    'demander un prix.',
+                    'Devis gratuit envoyé sur WhatsApp — le compte est '
+                    'facultatif.',
                     textAlign: TextAlign.center,
                     style: TextStyle(fontSize: 11.5, color: AppColors.gris),
                   ),

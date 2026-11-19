@@ -6,7 +6,8 @@ import '../../providers/auth_providers.dart';
 import '../shared/dashboard_scaffold.dart';
 import '../shared/section_group.dart';
 import 'vehicles/vehicles_screen.dart';
-import 'requests/new_request_screen.dart';
+import '../request/quick_request_screen.dart';
+import '../request/create_account_screen.dart';
 import 'requests/requests_screen.dart';
 import 'quotes/my_quotes_screen.dart';
 import 'orders/my_orders_screen.dart';
@@ -18,9 +19,19 @@ class ClientDashboard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final profile = ref.watch(currentProfileProvider).value;
+    final auth = ref.watch(authServiceProvider);
     return DashboardScaffold(
       title: 'Espace Client',
       children: [
+        // Compte facultatif : invite -> proposer de créer le compte ;
+        // email confirmé sans mot de passe -> dernière étape.
+        if (auth.isGuest) ...[
+          const GuestAccountCard(),
+          const SizedBox(height: 16),
+        ] else if (auth.needsPassword) ...[
+          const SetPasswordCard(),
+          const SizedBox(height: 16),
+        ],
         Text('Bonjour ${profile?.fullName ?? ''} 👋',
             style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w700)),
         const SizedBox(height: 4),
@@ -28,7 +39,7 @@ class ClientDashboard extends ConsumerWidget {
             style: TextStyle(color: AppColors.gris)),
         const SizedBox(height: 20),
         _FeatureBanner(
-          onTap: () => _go(context, const NewRequestScreen()),
+          onTap: () => _go(context, const QuickRequestScreen()),
         ),
         const SizedBox(height: 20),
         SectionGroup(
@@ -38,7 +49,7 @@ class ClientDashboard extends ConsumerWidget {
           subtitle: 'Devis & commandes de pièces',
           child: _Tiles(items: [
             _TileData(Icons.add_shopping_cart, 'Nouvelle demande',
-                AppColors.primary, () => _go(context, const NewRequestScreen())),
+                AppColors.primary, () => _go(context, const QuickRequestScreen())),
             _TileData(Icons.inventory_2, 'Mes demandes', AppColors.ambre,
                 () => _go(context, const RequestsScreen())),
             _TileData(Icons.receipt_long, 'Mes devis', AppColors.vert,
