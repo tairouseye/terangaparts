@@ -46,6 +46,13 @@ class AuthService {
     );
   }
 
+  /// Garantit une session (invitee si besoin) avant un appel serveur qui
+  /// l'exige (lecture de photo). Nom et WhatsApp seront ajoutes a l'envoi.
+  Future<void> ensureSession() async {
+    if (currentUser != null) return;
+    await _client.auth.signInAnonymously();
+  }
+
   /// Vrai si la session courante est une session invitee (sans email).
   bool get isGuest => currentUser?.isAnonymous ?? false;
 

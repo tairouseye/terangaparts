@@ -72,11 +72,13 @@ class PartsConfig {
       id: 'seoul_autoparts',
       name: 'Seoul AutoParts',
       note: 'Séoul — 100 % pièces d\'origine Hyundai (OEM). Contact : '
-          'Park Jong-hyuk. Prix = coût + 20 %, sous 24 h. Pièces payées '
-          'd\'avance ; FedEx facturé au coût après emballage (en USD). '
-          'Douane et taxes à la charge de l\'acheteur. Privilégier les '
-          'pièces petites et légères.',
+          'Park Jong-hyuk. Prix = coût + 20 % (puis 15 %, puis ~12 % '
+          'avec la relation), sous 24 h, sans minimum de commande. Pièces '
+          'payées d\'avance ; FedEx facturé au coût après emballage (en '
+          'USD). Douane et taxes à la charge de l\'acheteur. Privilégier '
+          'les pièces petites et légères.',
       siteUrl: 'https://seoul-autoparts.com',
+      whatsapp: '+82 10 7773 7657',
       currency: 'USD',
     ),
     PartsSupplier(

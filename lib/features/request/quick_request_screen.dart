@@ -14,6 +14,7 @@ import '../../models/vehicle.dart';
 import '../../providers/auth_providers.dart';
 import '../../providers/request_providers.dart';
 import '../../providers/vehicle_providers.dart';
+import '../../services/photo_analysis_service.dart';
 import 'create_account_screen.dart';
 
 /// Marques proposees (vehicules coreens).
@@ -62,8 +63,151 @@ class _QuickRequestScreenState extends ConsumerState<QuickRequestScreen> {
   final _whatsapp = TextEditingController();
   bool _contactPrefilled = false;
 
+  // Lecture des photos par l'IA
+  bool _readingVin = false;
+  bool _readingPart = false;
+  String? _vinInfo; // resultat / conseil affiche sous le bouton
+  bool _vinOk = false;
+  String? _partInfo;
+  bool _partOk = false;
+
   bool _saving = false;
   String? _error;
+
+  /// Rapproche la marque lue de la liste proposee.
+  String? _matchBrand(String? raw) {
+    if (raw == null || raw.trim().isEmpty) return null;
+    final r = raw.toLowerCase();
+    for (final b in _brands) {
+      final first = b.split(RegExp(r'[ /(]')).first.toLowerCase();
+      if (first.isNotEmpty && r.contains(first)) return b;
+    }
+    if (r.contains('kgm')) return 'SsangYong / KGM';
+    if (r.contains('daewoo') || r.contains('gm')) {
+      return 'Chevrolet / Daewoo (GM Korea)';
+    }
+    if (r.contains('samsung')) return 'Renault Samsung';
+    return null;
+  }
+
+  Future<XFile?> _pickImage() => ImagePicker().pickImage(
+      source: ImageSource.gallery, maxWidth: 1600, imageQuality: 80);
+
+  /// Photo de la carte grise (ou du VIN) -> remplit le vehicule.
+  Future<void> _scanVin() async {
+    final img = await _pickImage();
+    if (img == null) return;
+    setState(() {
+      _readingVin = true;
+      _vinInfo = null;
+    });
+    try {
+      await ref.read(authServiceProvider).ensureSession();
+      final bytes = await img.readAsBytes();
+      final r = await ref.read(photoAnalysisServiceProvider).readVin(
+          bytes, PhotoAnalysisService.mediaTypeFor(img.name, img.mimeType));
+      final brand = _matchBrand(r.brand);
+      setState(() {
+        _useNewVehicle = true;
+        if (r.vin != null) _vin.text = r.vin!;
+        if (brand != null) {
+          _brand = brand;
+        } else if (r.brand != null && r.brand!.trim().isNotEmpty) {
+          _brand = 'Autre';
+          _otherBrand.text = r.brand!.trim();
+        }
+        if (r.model != null) _model.text = r.model!;
+        if (r.year != null) _year.text = '${r.year}';
+        _vinOk = r.vin != null;
+        _vinInfo = r.vin != null
+            ? 'VIN lu : ${r.vin}. Vérifiez les informations ci-dessous.'
+            : (r.note ??
+                'VIN non lisible. Essayez une photo plus nette ou '
+                    'saisissez-le à la main.');
+      });
+    } on PhotoAnalysisException catch (e) {
+      setState(() {
+        _vinOk = false;
+        _vinInfo = e.message;
+      });
+    } catch (_) {
+      setState(() {
+        _vinOk = false;
+        _vinInfo = 'Lecture impossible. Saisissez les informations à la main.';
+      });
+    } finally {
+      if (mounted) setState(() => _readingVin = false);
+    }
+  }
+
+  /// Photo de la piece -> identifie la piece (et la joint a la demande).
+  Future<void> _scanPart() async {
+    final img = await _pickImage();
+    if (img == null) return;
+    setState(() {
+      _photo = img; // jointe a la demande dans tous les cas
+      _readingPart = true;
+      _partInfo = null;
+    });
+    try {
+      await ref.read(authServiceProvider).ensureSession();
+      final bytes = await img.readAsBytes();
+      final r = await ref.read(photoAnalysisServiceProvider).readPart(
+            bytes,
+            PhotoAnalysisService.mediaTypeFor(img.name, img.mimeType),
+            catalog: PartCatalog.catalog,
+          );
+      if (!r.isAutoPart) {
+        setState(() {
+          _partOk = false;
+          _partInfo = r.note ??
+              'Nous ne reconnaissons pas de pièce sur cette photo. '
+                  'Choisissez la pièce dans la liste.';
+        });
+        return;
+      }
+      setState(() {
+        final cat = PartCatalog.categories.contains(r.category)
+            ? r.category!
+            : 'Autre';
+        _category = cat;
+        final match = r.catalogMatch;
+        if (cat != 'Autre' &&
+            match != null &&
+            PartCatalog.partsFor(cat).contains(match)) {
+          _selectedPart = match;
+        } else {
+          _selectedPart = cat == 'Autre' ? null : PartCatalog.autre;
+          _customPart.text = r.partName ?? '';
+        }
+        final extras = <String>[
+          if (r.oemPartNumber != null) 'Réf. lue sur la photo : ${r.oemPartNumber}',
+          if (r.sideOrPosition != null) 'Position : ${r.sideOrPosition}',
+        ];
+        if (extras.isNotEmpty) {
+          final existing = _notes.text.trim();
+          _notes.text = [if (existing.isNotEmpty) existing, ...extras].join('\n');
+        }
+        _partOk = true;
+        _partInfo = 'Pièce reconnue : ${r.partName ?? match ?? cat}'
+            '${r.oemPartNumber != null ? ' (réf. ${r.oemPartNumber})' : ''}. '
+            '${r.note ?? 'Vérifiez ci-dessous.'}';
+      });
+    } on PhotoAnalysisException catch (e) {
+      setState(() {
+        _partOk = false;
+        _partInfo = '${e.message} La photo reste jointe à votre demande.';
+      });
+    } catch (_) {
+      setState(() {
+        _partOk = false;
+        _partInfo = 'Lecture impossible. La photo reste jointe à votre '
+            'demande : choisissez la pièce dans la liste.';
+      });
+    } finally {
+      if (mounted) setState(() => _readingPart = false);
+    }
+  }
 
   bool get _needsCustom =>
       _category == 'Autre' || _selectedPart == PartCatalog.autre;
@@ -89,12 +233,6 @@ class _QuickRequestScreenState extends ConsumerState<QuickRequestScreen> {
       c.dispose();
     }
     super.dispose();
-  }
-
-  Future<void> _pickPhoto() async {
-    final img = await ImagePicker()
-        .pickImage(source: ImageSource.gallery, imageQuality: 70);
-    if (img != null) setState(() => _photo = img);
   }
 
   Future<void> _submit() async {
@@ -232,8 +370,19 @@ class _QuickRequestScreenState extends ConsumerState<QuickRequestScreen> {
                   ],
                   // ---------------- 1. Vehicule ----------------
                   const _StepTitle(n: 1, title: 'Votre véhicule'),
+                  _PhotoScanButton(
+                    icon: Icons.document_scanner,
+                    label: 'Photo de la carte grise',
+                    hint: 'Nous lisons le VIN, la marque et l\'année pour vous.',
+                    busy: _readingVin,
+                    onTap: _scanVin,
+                    info: _vinInfo,
+                    ok: _vinOk,
+                  ),
+                  const SizedBox(height: 12),
                   if (vehicles.isNotEmpty) ...[
                     DropdownButtonFormField<Object>(
+                      key: ValueKey('veh-$_useNewVehicle'),
                       initialValue: _useNewVehicle ? 'new' : _savedVehicle,
                       isExpanded: true,
                       decoration:
@@ -253,6 +402,7 @@ class _QuickRequestScreenState extends ConsumerState<QuickRequestScreen> {
                   ],
                   if (showVehicleFields) ...[
                     DropdownButtonFormField<String>(
+                      key: ValueKey('brand-$_brand'),
                       initialValue: _brand,
                       isExpanded: true,
                       decoration: const InputDecoration(labelText: 'Marque *'),
@@ -297,7 +447,21 @@ class _QuickRequestScreenState extends ConsumerState<QuickRequestScreen> {
                   const SizedBox(height: 24),
                   // ---------------- 2. Piece ----------------
                   const _StepTitle(n: 2, title: 'La pièce recherchée'),
+                  _PhotoScanButton(
+                    icon: Icons.photo_camera,
+                    label: _photo != null
+                        ? 'Changer la photo de la pièce'
+                        : 'Photo de la pièce',
+                    hint: 'Nous reconnaissons la pièce et sa référence si '
+                        'elle est visible. La photo est jointe à la demande.',
+                    busy: _readingPart,
+                    onTap: _scanPart,
+                    info: _partInfo,
+                    ok: _partOk,
+                  ),
+                  const SizedBox(height: 12),
                   DropdownButtonFormField<String>(
+                    key: ValueKey('cat-$_category'),
                     initialValue: _category,
                     isExpanded: true,
                     decoration: const InputDecoration(labelText: 'Catégorie *'),
@@ -315,6 +479,7 @@ class _QuickRequestScreenState extends ConsumerState<QuickRequestScreen> {
                   if (_category != null && _category != 'Autre') ...[
                     const SizedBox(height: 12),
                     DropdownButtonFormField<String>(
+                      key: ValueKey('part-$_category-$_selectedPart'),
                       initialValue: _selectedPart,
                       isExpanded: true,
                       decoration: const InputDecoration(labelText: 'Pièce *'),
@@ -341,20 +506,6 @@ class _QuickRequestScreenState extends ConsumerState<QuickRequestScreen> {
                       hint: 'Référence connue, côté (gauche/droite), état…',
                       maxLines: 2,
                       caps: TextCapitalization.sentences),
-                  const SizedBox(height: 12),
-                  OutlinedButton.icon(
-                    onPressed: _pickPhoto,
-                    icon: Icon(
-                        _photo != null ? Icons.check_circle : Icons.photo_camera,
-                        color: _photo != null ? AppColors.vert : AppColors.gris),
-                    label: Text(_photo != null
-                        ? _photo!.name
-                        : 'Ajouter une photo de la pièce (facultatif)'),
-                    style: OutlinedButton.styleFrom(
-                      minimumSize: const Size.fromHeight(50),
-                      alignment: Alignment.centerLeft,
-                    ),
-                  ),
                   const SizedBox(height: 24),
                   // ---------------- 3. Contact ----------------
                   const _StepTitle(n: 3, title: 'Où vous envoyer le devis ?'),
@@ -425,6 +576,62 @@ class _QuickRequestScreenState extends ConsumerState<QuickRequestScreen> {
           (required
               ? (v) => (v == null || v.trim().isEmpty) ? 'Obligatoire' : null
               : null),
+    );
+  }
+}
+
+/// Gros bouton « photo » + texte d'aide + resultat de la lecture.
+class _PhotoScanButton extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final String hint;
+  final bool busy;
+  final VoidCallback onTap;
+  final String? info;
+  final bool ok;
+  const _PhotoScanButton({
+    required this.icon,
+    required this.label,
+    required this.hint,
+    required this.busy,
+    required this.onTap,
+    required this.info,
+    required this.ok,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        OutlinedButton.icon(
+          onPressed: busy ? null : onTap,
+          icon: busy
+              ? const SizedBox(
+                  height: 18,
+                  width: 18,
+                  child: CircularProgressIndicator(strokeWidth: 2))
+              : Icon(icon),
+          label: Text(busy ? 'Lecture de la photo…' : label),
+          style: OutlinedButton.styleFrom(
+            minimumSize: const Size.fromHeight(54),
+            side: const BorderSide(color: AppColors.primary, width: 1.5),
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.only(top: 4, left: 4),
+          child: Text(
+            info == null ? '$hint Ou remplissez à la main.' : info!,
+            style: TextStyle(
+              fontSize: 12,
+              color: info == null
+                  ? AppColors.gris
+                  : (ok ? AppColors.vert : const Color(0xFF9A6B00)),
+              fontWeight: info == null ? FontWeight.normal : FontWeight.w600,
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

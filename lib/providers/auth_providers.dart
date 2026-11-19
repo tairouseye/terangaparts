@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/app_user.dart';
 import '../services/auth_service.dart';
+import '../services/photo_analysis_service.dart';
 import '../services/storage_service.dart';
 
 /// Client Supabase global (initialise dans main.dart).
@@ -15,6 +16,11 @@ final authServiceProvider = Provider<AuthService>((ref) {
 
 final storageServiceProvider = Provider<StorageService>((ref) {
   return StorageService(ref.watch(supabaseClientProvider));
+});
+
+/// Lecture de photos par l'IA (VIN / piece) via la fonction `analyze-photo`.
+final photoAnalysisServiceProvider = Provider<PhotoAnalysisService>((ref) {
+  return PhotoAnalysisService(ref.watch(supabaseClientProvider));
 });
 
 /// Flux d'etat d'authentification (login / logout).
