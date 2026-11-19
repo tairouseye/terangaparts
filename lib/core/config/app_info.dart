@@ -1,0 +1,54 @@
+/// Informations sur l'éditeur de l'application et l'assistance.
+///
+/// Centralise ici : un changement de numéro ou d'email ne se fait qu'a un
+/// seul endroit. La VERSION, elle, n'est pas dupliquee ici : elle est lue a
+/// l'execution depuis le pubspec via package_info_plus (evite toute derive).
+class AppInfo {
+  const AppInfo._();
+
+  /// Marque de l'application (activite).
+  static const String appName = 'Teranga Parts';
+  static const String appTagline = 'Pièces détachées coréennes';
+
+  /// Editeur du logiciel.
+  static const String publisher = 'GesPro Digital';
+  static const String publisherShort = 'GesPro';
+  static const String publisherSite = 'https://gesprosn.org';
+
+  /// Date de deploiement, injectee au build :
+  ///   flutter build web --dart-define=BUILD_DATE=2026-07-17
+  /// Vide en dev -> on n'affiche que la version du pubspec.
+  static const String buildDate =
+      String.fromEnvironment('BUILD_DATE', defaultValue: '');
+
+  /// Assistance.
+  static const String supportPhone = '+221 77 343 59 28';
+  static const String supportPhoneE164 = '221773435928';
+  static const String supportEmail = 'gesprosn@gmail.com';
+
+  /// WhatsApp COMMERCIAL (contact pièces, affiché aux clients).
+  static const String salesWhatsapp = '+221 77 282 17 82';
+  static const String salesWhatsappE164 = '221772821782';
+
+  /// Lien WhatsApp vers le commercial, message pré-rempli.
+  static String whatsappSales(String message) =>
+      'https://wa.me/$salesWhatsappE164?text=${Uri.encodeComponent(message)}';
+
+  /// Lien WhatsApp (vers l'assistance) avec message pre-rempli.
+  static String whatsappUrl({String? message}) {
+    final text = Uri.encodeComponent(
+      message ?? 'Bonjour, j\'ai besoin d\'assistance sur l\'application '
+          '$appName ($appTagline).',
+    );
+    return 'https://wa.me/$supportPhoneE164?text=$text';
+  }
+
+  /// Lien WhatsApp vers un numero arbitraire (ex : le client), message pre-rempli.
+  /// Normalise le numero en chiffres (retire +, espaces, tirets).
+  static String whatsappTo(String number, String message) {
+    final digits = number.replaceAll(RegExp(r'[^0-9]'), '');
+    return 'https://wa.me/$digits?text=${Uri.encodeComponent(message)}';
+  }
+
+  static String get telUrl => 'tel:+$supportPhoneE164';
+}
