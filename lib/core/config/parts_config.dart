@@ -71,8 +71,11 @@ class PartsConfig {
     PartsSupplier(
       id: 'seoul_autoparts',
       name: 'Seoul AutoParts',
-      note: 'Séoul — pièces d\'origine Hyundai, Kia, KGM. Devis par WhatsApp, '
-          'remises pour acheteurs réguliers.',
+      note: 'Séoul — 100 % pièces d\'origine Hyundai (OEM). Contact : '
+          'Park Jong-hyuk. Prix = coût + 20 %, sous 24 h. Pièces payées '
+          'd\'avance ; FedEx facturé au coût après emballage (en USD). '
+          'Douane et taxes à la charge de l\'acheteur. Privilégier les '
+          'pièces petites et légères.',
       siteUrl: 'https://seoul-autoparts.com',
       currency: 'USD',
     ),
