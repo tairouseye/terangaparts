@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/widgets/teranga_logo.dart';
 import '../../providers/auth_providers.dart';
+import '../../core/utils/auth_errors.dart';
 import '../../services/auth_service.dart';
 import '../shared/gespro_credit.dart';
 
@@ -44,8 +45,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       ref.invalidate(currentProfileProvider);
       if (mounted) context.go('/');
     } catch (e) {
-      setState(() =>
-          _error = 'Connexion impossible. Vérifiez vos identifiants.');
+      setState(() => _error = friendlyAuthError(e));
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -98,8 +98,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('Envoi impossible : $e')));
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            duration: const Duration(seconds: 8),
+            content: Text(friendlyAuthError(e))));
       }
     }
   }

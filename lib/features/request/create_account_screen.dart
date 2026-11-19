@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../core/theme/app_theme.dart';
+import '../../core/utils/auth_errors.dart';
 import '../../providers/auth_providers.dart';
 import '../../services/auth_service.dart';
 
@@ -81,12 +81,8 @@ class _CreateAccountScreenState extends ConsumerState<CreateAccountScreen> {
           .read(authServiceProvider)
           .attachEmail(_email.text.trim(), redirectTo: siteRedirectUrl());
       setState(() => _sent = true);
-    } on AuthException catch (e) {
-      setState(() => _error = e.message.contains('already')
-          ? 'Cet email a déjà un compte : connectez-vous avec lui.'
-          : 'Envoi impossible : ${e.message}');
-    } catch (_) {
-      setState(() => _error = 'Envoi impossible. Réessayez.');
+    } catch (e) {
+      setState(() => _error = friendlyAuthError(e));
     } finally {
       if (mounted) setState(() => _sending = false);
     }
@@ -204,10 +200,8 @@ class _SetPasswordCardState extends ConsumerState<SetPasswordCard> {
     try {
       await ref.read(authServiceProvider).setPassword(_pwd.text);
       setState(() => _done = true);
-    } on AuthException catch (e) {
-      setState(() => _error = e.message);
-    } catch (_) {
-      setState(() => _error = 'Enregistrement impossible. Réessayez.');
+    } catch (e) {
+      setState(() => _error = friendlyAuthError(e));
     } finally {
       if (mounted) setState(() => _saving = false);
     }

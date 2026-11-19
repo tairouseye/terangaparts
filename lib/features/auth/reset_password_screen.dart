@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/widgets/teranga_logo.dart';
 import '../../providers/auth_providers.dart';
+import '../../core/utils/auth_errors.dart';
 
 /// Ecran atteint via le lien de recuperation : l'utilisateur choisit un
 /// nouveau mot de passe (session de recuperation active).
@@ -57,7 +58,7 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
         context.go('/login');
       }
     } catch (e) {
-      setState(() => _error = 'Échec de la mise à jour : $e');
+      setState(() => _error = friendlyAuthError(e));
     } finally {
       if (mounted) setState(() => _loading = false);
     }

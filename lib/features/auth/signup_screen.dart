@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/theme/app_theme.dart';
 import '../../models/enums.dart';
 import '../../providers/auth_providers.dart';
+import '../../core/utils/auth_errors.dart';
 
 class SignupScreen extends ConsumerStatefulWidget {
   const SignupScreen({super.key});
@@ -64,12 +65,14 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-              content: Text('Compte créé. Vous pouvez vous connecter.')),
+              duration: Duration(seconds: 10),
+              content: Text('Compte créé. Confirmez votre email avec le lien '
+                  'reçu (pensez aux spams), puis connectez-vous.')),
         );
         context.go('/login');
       }
     } catch (e) {
-      setState(() => _error = 'Inscription impossible : $e');
+      setState(() => _error = friendlyAuthError(e));
     } finally {
       if (mounted) setState(() => _loading = false);
     }

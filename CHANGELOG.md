@@ -12,6 +12,14 @@ construire avec `tools/build_web.sh` (version et date embarquées).
 - **Z** (correctif) : correction sans nouvelle fonctionnalité
 - **+build** : augmente de 1 à chaque mise en ligne
 
+## [1.3.1] — Des messages clairs pour la connexion et les emails
+- **Messages en français clair** pour la connexion, l'inscription, le mot de
+  passe oublié et la création de compte : « Email ou mot de passe
+  incorrect », « Trop d'emails envoyés en peu de temps, réessayez dans une
+  heure », « Confirmez d'abord votre email »… au lieu de « Envoi impossible ».
+- **Inscription** : le message rappelle de confirmer son email avant de se
+  connecter (il disait « Vous pouvez vous connecter »).
+
 ## [1.3.0] — L'administrateur est prévenu, et l'app aussi
 Migration 0021.
 - **Alertes automatiques** (mig. 0021) : chaque nouvelle demande arrive dans la
